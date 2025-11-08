@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   prometheus:
     image: prom/prometheus:latest
@@ -22,6 +24,62 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  nginx:
+    build:
+      context: deployments/nginx/
+      dockerfile: Dockerfile
+    container_name: nginx_revproxy
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./deployments/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployments/nginx/certs:/etc/nginx/certs:ro
+      - ./deployments/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+    depends_on:
+      - api-v1-1
+      - api-v1-2
+      - api-v1-3
+      - api-v2
+
+  # Répliques api-v1
+  api-v1-1:
+    build:
+      context: src/api/v1
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    volumes:
+      - ./model:/app/model
+
+  api-v1-2:
+    build:
+      context: src/api/v1
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    volumes:
+      - ./model:/app/model
+
+  api-v1-3:
+    build:
+      context: src/api/v1
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    volumes:
+      - ./model:/app/model
+
+  # API v2
+  api-v2:
+    build:
+      context: src/api/v2
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    volumes:
+      - ./model:/app/model
 
 volumes:
   prometheus_data:
